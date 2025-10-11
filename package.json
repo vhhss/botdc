@@ -1,0 +1,25 @@
+{
+  "name": "botdisc",
+  "version": "1.0.0",
+  "description": "Bot de Discord hecho por vhhss",
+  "main": "index.js",
+  "scripts": {
+    "start": "node index.js"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/vhhss/botdc.git"
+  },
+  "keywords": ["discord", "bot", "voice"],
+  "author": "vhhss",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/vhhss/botdc/issues"
+  },
+  "homepage": "https://github.com/vhhss/botdc#readme",
+  "dependencies": {
+    "discord.js": "^14.16.3",
+    "@discordjs/voice": "^0.17.0",
+    "dotenv": "^16.4.5"
+  }
+}
