@@ -43,3 +43,4 @@ render.yaml
 # Archivos temporales y backups
 *.bak
 *.tmp
+assets/test.ogg

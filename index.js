@@ -1,6 +1,7 @@
 require('dotenv').config();
 const { Client, GatewayIntentBits } = require('discord.js');
 const handleMessage = require('./handlers/messageHandler');
+const onReady = require('./events/ready');
 
 const client = new Client({
   intents: [
@@ -8,17 +9,19 @@ const client = new Client({
     GatewayIntentBits.GuildMessages,
     GatewayIntentBits.GuildVoiceStates,
     GatewayIntentBits.MessageContent,
+    GatewayIntentBits.GuildMembers,
   ],
 });
 
-client.once('ready', () => {
-  console.log(`✅ Bot conectado como ${client.user.tag}`);
-});
+// Evento principal: bot listo
+client.once('ready', () => onReady(client));
 
+// Manejador de mensajes
 client.on('messageCreate', (message) => handleMessage(message));
 
+// Login con token
 client.login(process.env.TOKEN);
 
-// Dummy HTTP server para Render (no se usa, pero evita warnings)
+// Servidor dummy (solo para mantener Render activo)
 const http = require('http');
 http.createServer((req, res) => res.end('Bot is running')).listen(process.env.PORT || 3000);

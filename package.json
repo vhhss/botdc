@@ -10,7 +10,11 @@
     "type": "git",
     "url": "git+https://github.com/vhhss/botdc.git"
   },
-  "keywords": ["discord", "bot", "voice"],
+  "keywords": [
+    "discord",
+    "bot",
+    "voice"
+  ],
   "author": "vhhss",
   "license": "ISC",
   "bugs": {
@@ -18,8 +22,12 @@
   },
   "homepage": "https://github.com/vhhss/botdc#readme",
   "dependencies": {
-    "discord.js": "^14.16.3",
     "@discordjs/voice": "^0.17.0",
-    "dotenv": "^16.4.5"
+    "discord.js": "^14.16.3",
+    "dotenv": "^16.4.5",
+    "groq-sdk": "^0.33.0",
+    "libsodium-wrappers": "^0.7.15",
+    "node-fetch": "^3.3.2",
+    "opusscript": "^0.0.8"
   }
 }
