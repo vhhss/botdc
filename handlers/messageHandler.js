@@ -1,7 +1,7 @@
 const fs = require('fs');
 const path = require('path');
 
-const prefix = '!'; // podés cambiarlo por lo que quieras
+const prefix = '.'; // podés cambiarlo por lo que quieras
 
 module.exports = (message) => {
   // Ignorar mensajes del propio bot o sin prefijo

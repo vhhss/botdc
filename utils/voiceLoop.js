@@ -1,11 +1,16 @@
 const { Readable } = require('stream');
-const { createAudioPlayer, createAudioResource, AudioPlayerStatus, NoSubscriberBehavior } = require('@discordjs/voice');
+const {
+  createAudioPlayer,
+  createAudioResource,
+  AudioPlayerStatus,
+  NoSubscriberBehavior,
+} = require('@discordjs/voice');
 
 module.exports = (connection) => {
+  // stream que nunca se cierra, manda silencio continuo
   const silence = new Readable({
     read() {
       this.push(Buffer.from([0xf8, 0xff, 0xfe]));
-      this.push(null);
     },
   });
 
@@ -17,10 +22,15 @@ module.exports = (connection) => {
   player.play(resource);
   connection.subscribe(player);
 
-  player.on(AudioPlayerStatus.Idle, () => {
-    const silentRes = createAudioResource(silence, { inlineVolume: true });
-    player.play(silentRes);
+  player.on(AudioPlayerStatus.Playing, () => {
+    console.log('🔊 Enviando silencio (manteniendo conexión activa)');
   });
 
-  console.log('🔊 Silencio en loop activo');
+  player.on(AudioPlayerStatus.Idle, () => {
+    console.log('💤 AudioPlayer en idle, reiniciando silencio');
+    const res = createAudioResource(silence, { inlineVolume: true });
+    player.play(res);
+  });
+
+  console.log('🔁 Silencio infinito activado');
 };
