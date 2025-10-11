@@ -17,8 +17,10 @@ module.exports = async (client) => {
         selfDeaf: false,
       });
 
-      console.log('🎧 Conectado al canal de voz');
-      keepAlive(connection);
+      console.log('🎧 Conectado al canal de voz, esperando 1s para iniciar audio...');
+        setTimeout(() => {
+        keepAlive(connection);
+        }, 1000);
     } else {
       console.log('❌ No se encontró el canal o no es de voz');
     }
