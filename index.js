@@ -13,8 +13,8 @@ client.once('ready', () => {
   console.log(`✅ Bot conectado como ${client.user.tag}`);
   
   // ID de tu servidor y canal de voz:
-  const guild = client.guilds.cache.get('ID_DEL_SERVIDOR');
-  const channel = guild.channels.cache.get('ID_DEL_CANAL_DE_VOZ');
+  const guild = client.guilds.cache.get('1300545438721507368');
+  const channel = guild.channels.cache.get('1300545438721507372');
   
   if (channel) {
     joinVoiceChannel({
