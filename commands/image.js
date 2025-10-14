@@ -45,7 +45,7 @@ module.exports = {
 
       const msg = await loadingMessage.edit({ content: null, embeds: [createEmbed(currentIndex)], components: [row] });
 
-      const collector = msg.createMessageComponentCollector({ time: 180000 }); // 3 minutos
+      const collector = msg.createMessageComponentCollector({ time: 45000 }); // 3 minutos
 
       collector.on('collect', async (interaction) => {
         if (!interaction.isButton()) return;
