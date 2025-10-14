@@ -3,23 +3,29 @@ const axios = require('axios');
 
 module.exports = {
   name: 'image',
-  description: 'Busca imágenes en Unsplash y permite navegar indefinidamente hasta cerrar',
+  description: 'Busca imágenes en Unsplash con paginación ilimitada y botón para cerrar',
   async execute(message, args) {
     const query = args.join(' ');
     if (!query) return message.reply('🖼️ Tenés que escribir algo, por ejemplo: `.image gato`');
 
     const loadingMessage = await message.channel.send(`🔍 Buscando imágenes de: **${query}**...`);
 
-    try {
+    let results = [];
+    let currentPage = 1;
+    let currentIndex = 0;
+
+    // Función para cargar imágenes de Unsplash
+    const fetchImages = async (page = 1) => {
       const res = await axios.get('https://api.unsplash.com/search/photos', {
-        params: { query, per_page: 10 },
+        params: { query, per_page: 10, page },
         headers: { Authorization: `Client-ID ${process.env.UNSPLASH_ACCESS_KEY}` },
       });
+      return res.data.results;
+    };
 
-      const results = res.data.results;
+    try {
+      results = await fetchImages(currentPage);
       if (!results || results.length === 0) return loadingMessage.edit('❌ No encontré ninguna imagen.');
-
-      let currentIndex = 0;
 
       const createEmbed = (index) =>
         new EmbedBuilder()
@@ -40,17 +46,28 @@ module.exports = {
 
       const msg = await loadingMessage.edit({ content: null, embeds: [createEmbed(currentIndex)], components: [row] });
 
-      const collector = msg.createMessageComponentCollector({ time: 300000 }); // 5 minutos máximo
+      const collector = msg.createMessageComponentCollector({ time: 600000 }); // 10 minutos
 
       collector.on('collect', async (interaction) => {
         if (!interaction.isButton()) return;
-        if (interaction.user.id !== message.author.id) return interaction.reply({ content: '❌ Solo quien pidió puede usar los botones.', ephemeral: true });
+        if (interaction.user.id !== message.author.id)
+          return interaction.reply({ content: '❌ Solo quien pidió puede usar los botones.', ephemeral: true });
 
         if (interaction.customId === 'prev') {
           currentIndex = (currentIndex - 1 + results.length) % results.length;
           await interaction.update({ embeds: [createEmbed(currentIndex)] });
         } else if (interaction.customId === 'next') {
-          currentIndex = (currentIndex + 1) % results.length;
+          currentIndex++;
+          // Si llegamos al final de los resultados cargados, pedimos más
+          if (currentIndex >= results.length) {
+            currentPage++;
+            const moreResults = await fetchImages(currentPage);
+            if (moreResults.length === 0) {
+              currentIndex = results.length - 1; // no avanzamos más
+              return interaction.update({ content: '⚠️ No hay más imágenes.', embeds: [createEmbed(currentIndex)] });
+            }
+            results = results.concat(moreResults);
+          }
           await interaction.update({ embeds: [createEmbed(currentIndex)] });
         } else if (interaction.customId === 'stop') {
           await msg.edit({ components: [] });
