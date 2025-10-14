@@ -3,7 +3,7 @@ const axios = require('axios');
 
 module.exports = {
   name: 'image',
-  description: 'Busca imágenes en Unsplash con paginación ilimitada y botón para cerrar',
+  description: 'Galería completa de imágenes de Unsplash con miniaturas y navegación avanzada',
   async execute(message, args) {
     const query = args.join(' ');
     if (!query) return message.reply('🖼️ Tenés que escribir algo, por ejemplo: `.image gato`');
@@ -14,7 +14,6 @@ module.exports = {
     let currentPage = 1;
     let currentIndex = 0;
 
-    // Función para cargar imágenes de Unsplash
     const fetchImages = async (page = 1) => {
       const res = await axios.get('https://api.unsplash.com/search/photos', {
         params: { query, per_page: 10, page },
@@ -27,8 +26,8 @@ module.exports = {
       results = await fetchImages(currentPage);
       if (!results || results.length === 0) return loadingMessage.edit('❌ No encontré ninguna imagen.');
 
-      const createEmbed = (index) =>
-        new EmbedBuilder()
+      const createEmbed = (index) => {
+        const embed = new EmbedBuilder()
           .setTitle(`Resultados de: ${query}`)
           .setURL(results[index].links.html)
           .setColor('Random')
@@ -37,6 +36,17 @@ module.exports = {
             text: `Foto de ${results[index].user.name} | Pedido por ${message.author.username}`,
             iconURL: message.author.displayAvatarURL({ dynamic: true }),
           });
+
+        // Miniaturas de las siguientes 3 imágenes
+        const thumbs = [];
+        for (let i = 1; i <= 3; i++) {
+          const idx = (index + i) % results.length;
+          thumbs.push(results[idx].urls.thumb);
+        }
+        if (thumbs.length > 0) embed.addFields({ name: 'Siguientes miniaturas', value: thumbs.map(u => `[⁠](${u})`).join(' ') });
+
+        return embed;
+      };
 
       const row = new ActionRowBuilder().addComponents(
         new ButtonBuilder().setCustomId('prev').setLabel('⬅️').setStyle(ButtonStyle.Primary),
@@ -63,7 +73,7 @@ module.exports = {
             currentPage++;
             const moreResults = await fetchImages(currentPage);
             if (moreResults.length === 0) {
-              currentIndex = results.length - 1; // no avanzamos más
+              currentIndex = results.length - 1;
               return interaction.update({ content: '⚠️ No hay más imágenes.', embeds: [createEmbed(currentIndex)] });
             }
             results = results.concat(moreResults);
