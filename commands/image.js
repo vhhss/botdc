@@ -3,7 +3,7 @@ const axios = require('axios');
 
 module.exports = {
   name: 'image',
-  description: 'Busca imágenes en Unsplash y muestra quién lo solicitó',
+  description: 'Busca imágenes en Unsplash y permite navegar indefinidamente hasta cerrar',
   async execute(message, args) {
     const query = args.join(' ');
     if (!query) return message.reply('🖼️ Tenés que escribir algo, por ejemplo: `.image gato`');
@@ -12,7 +12,7 @@ module.exports = {
 
     try {
       const res = await axios.get('https://api.unsplash.com/search/photos', {
-        params: { query, per_page: 3 },
+        params: { query, per_page: 10 },
         headers: { Authorization: `Client-ID ${process.env.UNSPLASH_ACCESS_KEY}` },
       });
 
@@ -34,17 +34,28 @@ module.exports = {
 
       const row = new ActionRowBuilder().addComponents(
         new ButtonBuilder().setCustomId('prev').setLabel('⬅️').setStyle(ButtonStyle.Primary),
-        new ButtonBuilder().setCustomId('next').setLabel('➡️').setStyle(ButtonStyle.Primary)
+        new ButtonBuilder().setCustomId('next').setLabel('➡️').setStyle(ButtonStyle.Primary),
+        new ButtonBuilder().setCustomId('stop').setLabel('❌ Cerrar').setStyle(ButtonStyle.Danger)
       );
 
       const msg = await loadingMessage.edit({ content: null, embeds: [createEmbed(currentIndex)], components: [row] });
 
-      const collector = msg.createMessageComponentCollector({ time: 120000 });
+      const collector = msg.createMessageComponentCollector({ time: 300000 }); // 5 minutos máximo
+
       collector.on('collect', async (interaction) => {
         if (!interaction.isButton()) return;
-        if (interaction.customId === 'prev') currentIndex = (currentIndex - 1 + results.length) % results.length;
-        if (interaction.customId === 'next') currentIndex = (currentIndex + 1) % results.length;
-        await interaction.update({ embeds: [createEmbed(currentIndex)] });
+        if (interaction.user.id !== message.author.id) return interaction.reply({ content: '❌ Solo quien pidió puede usar los botones.', ephemeral: true });
+
+        if (interaction.customId === 'prev') {
+          currentIndex = (currentIndex - 1 + results.length) % results.length;
+          await interaction.update({ embeds: [createEmbed(currentIndex)] });
+        } else if (interaction.customId === 'next') {
+          currentIndex = (currentIndex + 1) % results.length;
+          await interaction.update({ embeds: [createEmbed(currentIndex)] });
+        } else if (interaction.customId === 'stop') {
+          await msg.edit({ components: [] });
+          collector.stop();
+        }
       });
 
       collector.on('end', async () => {
