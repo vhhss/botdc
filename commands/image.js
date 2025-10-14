@@ -27,7 +27,10 @@ module.exports = {
           .setURL(results[index].links.html)
           .setColor('Random')
           .setImage(results[index].urls.regular)
-          .setFooter({ text: `Foto de ${results[index].user.name} en Unsplash | Pedido por ${message.author.username}` });
+          .setFooter({
+            text: `Foto de ${results[index].user.name} | Pedido por ${message.author.username}`,
+            iconURL: message.author.displayAvatarURL({ dynamic: true }),
+          });
 
       const row = new ActionRowBuilder().addComponents(
         new ButtonBuilder().setCustomId('prev').setLabel('⬅️').setStyle(ButtonStyle.Primary),
@@ -37,16 +40,10 @@ module.exports = {
       const msg = await loadingMessage.edit({ content: null, embeds: [createEmbed(currentIndex)], components: [row] });
 
       const collector = msg.createMessageComponentCollector({ time: 120000 });
-
       collector.on('collect', async (interaction) => {
         if (!interaction.isButton()) return;
-
-        if (interaction.customId === 'prev') {
-          currentIndex = (currentIndex - 1 + results.length) % results.length;
-        } else if (interaction.customId === 'next') {
-          currentIndex = (currentIndex + 1) % results.length;
-        }
-
+        if (interaction.customId === 'prev') currentIndex = (currentIndex - 1 + results.length) % results.length;
+        if (interaction.customId === 'next') currentIndex = (currentIndex + 1) % results.length;
         await interaction.update({ embeds: [createEmbed(currentIndex)] });
       });
 
@@ -56,7 +53,7 @@ module.exports = {
 
     } catch (err) {
       console.error('Error buscando imagen en Unsplash:', err.message);
-      await loadingMessage.edit('⚠️ Hubo un error al buscar la imagen.');
+      await loadingMessage.edit('⚠️ Hubo un error al buscar la imagen. Verifica tu API Key de Unsplash.');
     }
   },
 };
