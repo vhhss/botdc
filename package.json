@@ -23,11 +23,14 @@
   "homepage": "https://github.com/vhhss/botdc#readme",
   "dependencies": {
     "@discordjs/voice": "^0.17.0",
-    "discord.js": "^14.16.3",
+    "axios": "^1.12.2",
+    "discord.js": "^14.23.2",
     "dotenv": "^16.4.5",
     "groq-sdk": "^0.33.0",
+    "images-scraper": "^6.0.0",
     "libsodium-wrappers": "^0.7.15",
     "node-fetch": "^3.3.2",
-    "opusscript": "^0.0.8"
+    "opusscript": "^0.0.8",
+    "puppeteer": "^24.24.1"
   }
 }

@@ -1,5 +1,4 @@
-// utils/memory.js
-const memory = new Map(); // un mapa por canal
+const memory = new Map();
 
 function addMessage(channelId, role, content) {
   if (!memory.has(channelId)) {
@@ -9,7 +8,6 @@ function addMessage(channelId, role, content) {
   const msgs = memory.get(channelId);
   msgs.push({ role, content });
 
-  // Solo guarda los últimos 5
   if (msgs.length > 10) msgs.shift();
 
   memory.set(channelId, msgs);

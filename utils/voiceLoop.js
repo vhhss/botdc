@@ -11,10 +11,9 @@ const {
 module.exports = (connection) => {
   console.log('🚀 Ejecutando voiceLoop()');
 
-  // Crea un stream que manda frames de silencio
   const silence = new Readable({
     read() {
-      this.push(Buffer.from([0xf8, 0xff, 0xfe])); // Frame de silencio válido
+      this.push(Buffer.from([0xf8, 0xff, 0xfe]));
     },
   });
 

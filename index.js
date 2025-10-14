@@ -13,15 +13,11 @@ const client = new Client({
   ],
 });
 
-// Evento principal: bot listo
 client.once('ready', () => onReady(client));
 
-// Manejador de mensajes
 client.on('messageCreate', (message) => handleMessage(message));
 
-// Login con token
 client.login(process.env.TOKEN);
 
-// Servidor dummy (solo para mantener Render activo)
 const http = require('http');
 http.createServer((req, res) => res.end('Bot is running')).listen(process.env.PORT || 3000);
