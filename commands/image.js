@@ -3,7 +3,7 @@ const axios = require('axios');
 
 module.exports = {
   name: 'image',
-  description: 'Galería completa de imágenes de Unsplash con miniaturas y navegación avanzada',
+  description: 'Galería de imágenes de Unsplash con navegación y cierre automático',
   async execute(message, args) {
     const query = args.join(' ');
     if (!query) return message.reply('🖼️ Tenés que escribir algo, por ejemplo: `.image gato`');
@@ -26,8 +26,8 @@ module.exports = {
       results = await fetchImages(currentPage);
       if (!results || results.length === 0) return loadingMessage.edit('❌ No encontré ninguna imagen.');
 
-      const createEmbed = (index) => {
-        const embed = new EmbedBuilder()
+      const createEmbed = (index) =>
+        new EmbedBuilder()
           .setTitle(`Resultados de: ${query}`)
           .setURL(results[index].links.html)
           .setColor('Random')
@@ -37,17 +37,6 @@ module.exports = {
             iconURL: message.author.displayAvatarURL({ dynamic: true }),
           });
 
-        // Miniaturas de las siguientes 3 imágenes
-        const thumbs = [];
-        for (let i = 1; i <= 3; i++) {
-          const idx = (index + i) % results.length;
-          thumbs.push(results[idx].urls.thumb);
-        }
-        if (thumbs.length > 0) embed.addFields({ name: 'Siguientes miniaturas', value: thumbs.map(u => `[⁠](${u})`).join(' ') });
-
-        return embed;
-      };
-
       const row = new ActionRowBuilder().addComponents(
         new ButtonBuilder().setCustomId('prev').setLabel('⬅️').setStyle(ButtonStyle.Primary),
         new ButtonBuilder().setCustomId('next').setLabel('➡️').setStyle(ButtonStyle.Primary),
@@ -56,10 +45,11 @@ module.exports = {
 
       const msg = await loadingMessage.edit({ content: null, embeds: [createEmbed(currentIndex)], components: [row] });
 
-      const collector = msg.createMessageComponentCollector({ time: 600000 }); // 10 minutos
+      const collector = msg.createMessageComponentCollector({ time: 180000 }); // 3 minutos
 
       collector.on('collect', async (interaction) => {
         if (!interaction.isButton()) return;
+
         if (interaction.user.id !== message.author.id)
           return interaction.reply({ content: '❌ Solo quien pidió puede usar los botones.', ephemeral: true });
 
@@ -68,7 +58,6 @@ module.exports = {
           await interaction.update({ embeds: [createEmbed(currentIndex)] });
         } else if (interaction.customId === 'next') {
           currentIndex++;
-          // Si llegamos al final de los resultados cargados, pedimos más
           if (currentIndex >= results.length) {
             currentPage++;
             const moreResults = await fetchImages(currentPage);
