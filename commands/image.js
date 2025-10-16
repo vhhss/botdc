@@ -1,86 +1,85 @@
-const { EmbedBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle } = require('discord.js');
-const axios = require('axios');
+const { EmbedBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle } = require("discord.js");
+require("dotenv").config();
+const fetch = (...args) => import("node-fetch").then(({ default: fetch }) => fetch(...args));
 
 module.exports = {
-  name: 'image',
-  description: 'Galería de imágenes de Unsplash con navegación y cierre automático',
+  name: "image",
+  description: "Busca imágenes en Google y te deja pasar entre varias",
+  
   async execute(message, args) {
-    const query = args.join(' ');
-    if (!query) return message.reply('🖼️ Tenés que escribir algo, por ejemplo: `.image gato`');
+    const query = args.join(" ");
+    if (!query) return message.reply("🔍 Tenés que escribir qué imagen querés buscar. Ejemplo: `.image gatos`");
 
-    const loadingMessage = await message.channel.send(`🔍 Buscando imágenes de: **${query}**...`);
-
-    let results = [];
-    let currentPage = 1;
-    let currentIndex = 0;
-
-    const fetchImages = async (page = 1) => {
-      const res = await axios.get('https://api.unsplash.com/search/photos', {
-        params: { query, per_page: 10, page },
-        headers: { Authorization: `Client-ID ${process.env.UNSPLASH_ACCESS_KEY}` },
-      });
-      return res.data.results;
-    };
+    const API_KEY = process.env.GOOGLE_API_KEY;
+    const CX = process.env.GOOGLE_CX;
 
     try {
-      results = await fetchImages(currentPage);
-      if (!results || results.length === 0) return loadingMessage.edit('❌ No encontré ninguna imagen.');
+      const url = `https://www.googleapis.com/customsearch/v1?q=${encodeURIComponent(query)}&cx=${CX}&key=${API_KEY}&searchType=image&num=10&safe=active`;
+      const res = await fetch(url);
+      const data = await res.json();
 
-      const createEmbed = (index) =>
-        new EmbedBuilder()
-          .setTitle(`Resultados de: ${query}`)
-          .setURL(results[index].links.html)
-          .setColor('Random')
-          .setImage(results[index].urls.regular)
-          .setFooter({
-            text: `Foto de ${results[index].user.name} | Pedido por ${message.author.username}`,
-            iconURL: message.author.displayAvatarURL({ dynamic: true }),
-          });
+      if (!data.items || data.items.length === 0) {
+        return message.reply(`❌ No encontré imágenes para **${query}**.`);
+      }
+
+      let index = 0;
+
+      const generateEmbed = (i) => {
+        const item = data.items[i];
+        return new EmbedBuilder()
+          .setTitle(`🖼️ Imagen ${i + 1} de ${data.items.length} — ${query}`)
+          .setImage(item.link)
+          .setURL(item.image.contextLink)
+          .setColor(0x0099ff)
+          .setFooter({ text: "Fuente: Google Images" });
+      };
 
       const row = new ActionRowBuilder().addComponents(
-        new ButtonBuilder().setCustomId('prev').setLabel('⬅️').setStyle(ButtonStyle.Primary),
-        new ButtonBuilder().setCustomId('next').setLabel('➡️').setStyle(ButtonStyle.Primary),
-        new ButtonBuilder().setCustomId('stop').setLabel('❌ Cerrar').setStyle(ButtonStyle.Danger)
+        new ButtonBuilder()
+          .setCustomId("prev")
+          .setLabel("⬅️ Anterior")
+          .setStyle(ButtonStyle.Secondary),
+        new ButtonBuilder()
+          .setCustomId("next")
+          .setLabel("➡️ Siguiente")
+          .setStyle(ButtonStyle.Secondary),
+        new ButtonBuilder()
+          .setCustomId("stop")
+          .setLabel("❌ Cerrar")
+          .setStyle(ButtonStyle.Danger)
       );
 
-      const msg = await loadingMessage.edit({ content: null, embeds: [createEmbed(currentIndex)], components: [row] });
+      const msg = await message.reply({ embeds: [generateEmbed(index)], components: [row] });
 
-      const collector = msg.createMessageComponentCollector({ time: 45000 }); // 3 minutos
+      const collector = msg.createMessageComponentCollector({
+        time: 30_000, // 1 minuto
+      });
 
-      collector.on('collect', async (interaction) => {
-        if (!interaction.isButton()) return;
-
-        if (interaction.user.id !== message.author.id)
-          return interaction.reply({ content: '❌ Solo quien pidió puede usar los botones.', ephemeral: true });
-
-        if (interaction.customId === 'prev') {
-          currentIndex = (currentIndex - 1 + results.length) % results.length;
-          await interaction.update({ embeds: [createEmbed(currentIndex)] });
-        } else if (interaction.customId === 'next') {
-          currentIndex++;
-          if (currentIndex >= results.length) {
-            currentPage++;
-            const moreResults = await fetchImages(currentPage);
-            if (moreResults.length === 0) {
-              currentIndex = results.length - 1;
-              return interaction.update({ content: '⚠️ No hay más imágenes.', embeds: [createEmbed(currentIndex)] });
-            }
-            results = results.concat(moreResults);
-          }
-          await interaction.update({ embeds: [createEmbed(currentIndex)] });
-        } else if (interaction.customId === 'stop') {
-          await msg.edit({ components: [] });
-          collector.stop();
+      collector.on("collect", async (interaction) => {
+        if (interaction.user.id !== message.author.id) {
+          return interaction.reply({ content: "⛔ Solo el que pidió la imagen puede usar los botones.", ephemeral: true });
         }
+
+        if (interaction.customId === "prev") {
+          index = (index - 1 + data.items.length) % data.items.length;
+        } else if (interaction.customId === "next") {
+          index = (index + 1) % data.items.length;
+        } else if (interaction.customId === "stop") {
+          collector.stop("closed");
+          return interaction.update({ components: [] });
+        }
+
+        await interaction.update({ embeds: [generateEmbed(index)], components: [row] });
       });
 
-      collector.on('end', async () => {
-        await msg.edit({ components: [] });
+      collector.on("end", async () => {
+        try {
+          await msg.edit({ components: [] });
+        } catch {}
       });
-
-    } catch (err) {
-      console.error('Error buscando imagen en Unsplash:', err.message);
-      await loadingMessage.edit('⚠️ Hubo un error al buscar la imagen. Verifica tu API Key de Unsplash.');
+    } catch (error) {
+      console.error(error);
+      await message.reply("⚠️ Ocurrió un error al buscar imágenes.");
     }
   },
 };
